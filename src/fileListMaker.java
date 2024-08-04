@@ -16,7 +16,7 @@ public class fileListMaker
         while (running)
         {
             displayMenu();
-            String command = SafeInput.getRegExString(scanner, "Please enter a command: ", "[AaDdIiPpMmOoSsCcVvQq]");
+            String command = SafeInput.getRegExString(scanner, "Please enter a command ", "[AaDdIiPpMmOoSsCcVvQq]");
             switch (command.toUpperCase())
             {
                 case "A":
