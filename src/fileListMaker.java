@@ -1,39 +1,38 @@
 import java.io.*;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Scanner;
 
 public class fileListMaker
 {
-
-    private static List<String> items = new ArrayList<>();
+    private static ArrayList<String> myArrList = new ArrayList<>();
+    private static Scanner scanner = new Scanner(System.in);
     private static boolean needsToBeSaved = false;
     private static String filename = null;
 
     public static void main(String[] args)
     {
-        Scanner scanner = new Scanner(System.in);
-        while (true)
-        {
-            printMenu();
-            String choice = scanner.nextLine().trim().toUpperCase();
+        boolean running = true;
 
-            switch (choice)
+        while (running)
+        {
+            displayMenu();
+            String command = SafeInput.getRegExString(scanner, "Please enter a command: ", "[AaDdIiPpMmOoSsCcVvQq]");
+            switch (command.toUpperCase())
             {
                 case "A":
-                    addItem(scanner);
+                    addItem();
                     break;
                 case "D":
-                    deleteItem(scanner);
+                    deleteItem();
                     break;
                 case "I":
-                    insertItem(scanner);
+                    insertItem();
                     break;
                 case "M":
-                    moveItem(scanner);
+                    moveItem();
                     break;
                 case "O":
-                    openList(scanner);
+                    openList();
                     break;
                 case "S":
                     saveList();
@@ -45,16 +44,17 @@ public class fileListMaker
                     viewList();
                     break;
                 case "Q":
-                    quitProgram(scanner);
-                    return; // Exit the loop and end the program
-                default:
-                    System.out.println("Sorry! That is an invalid. Please choose again.");
+                    running = quitProgram();
+                    break;
             }
         }
+        System.out.println("So long!");
     }
 
-    private static void printMenu()
+    private static void displayMenu()
     {
+        System.out.println("\nCurrent List:");
+        viewList();
         System.out.println("\nMenu:");
         System.out.println("A - Add an item to the list");
         System.out.println("D - Delete an item from the list");
@@ -67,91 +67,68 @@ public class fileListMaker
         System.out.println("Q - Quit the program");
     }
 
-    private static void addItem(Scanner scanner)
+    private static void addItem()
     {
-        System.out.print("Please enter item to add: ");
-        String item = scanner.nextLine();
-        items.add(item);
+        String item = SafeInput.getRegExString(scanner, "Please enter the item to add: ", ".+");
+        myArrList.add(item);
         needsToBeSaved = true;
+        System.out.println("Item has been added.");
     }
 
-    private static void deleteItem(Scanner scanner)
+    private static void deleteItem()
     {
-        System.out.print("Please enter index of item to delete: ");
-        int index = scanner.nextInt();
-        scanner.nextLine(); // Consume newline
-        if (index >= 0 && index < items.size())
-        {
-            items.remove(index);
-            needsToBeSaved = true;
-        }
-        else
-        {
-            System.out.println("The index out of range.");
-        }
+        viewList();
+        int index = SafeInput.getRangedInt(scanner, "Please enter the number of the item to delete: ", 1, myArrList.size()) - 1; // Convert to zero-based index
+        myArrList.remove(index);
+        needsToBeSaved = true;
+        System.out.println("Item has been deleted.");
     }
 
-    private static void insertItem(Scanner scanner)
+    private static void insertItem()
     {
-        System.out.print("Please enter index to insert at: ");
-        int index = scanner.nextInt();
-        scanner.nextLine(); // Consume newline
-        System.out.print("Please enter item to insert: ");
-        String item = scanner.nextLine();
-        if (index >= 0 && index <= items.size())
-        {
-            items.add(index, item);
-            needsToBeSaved = true;
-        }
-        else
-        {
-            System.out.println("This index is out of range.");
-        }
+        viewList();
+        int index = SafeInput.getRangedInt(scanner, "Please enter the index to insert the item at: ", 1, myArrList.size() + 1) - 1; // Convert to zero-based index
+        String item = SafeInput.getRegExString(scanner, "Please enter the item to insert: ", ".+");
+        myArrList.add(index, item);
+        needsToBeSaved = true;
+        System.out.println("Item has been inserted.");
     }
 
-    private static void moveItem(Scanner scanner)
+    private static void moveItem()
     {
-        System.out.print("Please enter index of item to move: ");
-        int fromIndex = scanner.nextInt();
-        System.out.print("Please enter new index to move to: ");
-        int toIndex = scanner.nextInt();
-        scanner.nextLine(); // Consume newline
-        if (fromIndex >= 0 && fromIndex < items.size() && toIndex >= 0 && toIndex <= items.size())
-        {
-            String item = items.remove(fromIndex);
-            items.add(toIndex, item);
-            needsToBeSaved = true;
-        }
-        else
-        {
-            System.out.println("This index out of range.");
-        }
+        viewList();
+        int fromIndex = SafeInput.getRangedInt(scanner, "Please enter the index of the item to move: ", 1, myArrList.size()) - 1; // Convert to zero-based index
+        int toIndex = SafeInput.getRangedInt(scanner, "Please enter the new index to move the item to: ", 1, myArrList.size()) - 1; // Convert to zero-based index
+        String item = myArrList.remove(fromIndex);
+        myArrList.add(toIndex, item);
+        needsToBeSaved = true;
+        System.out.println("Item has been moved.");
     }
 
-    private static void openList(Scanner scanner)
+    private static void openList()
     {
-        if (needsToBeSaved && filename != null)
+        if (needsToBeSaved)
         {
-            System.out.print("You have unsaved changes. Would you like to save them first? (y/n): ");
-            String save = scanner.nextLine().trim().toLowerCase();
-            if (save.equals("y"))
+            boolean saveBeforeOpen = SafeInput.getYNConfirm(scanner, "You have unsaved changes. Would you like to save them first?");
+            if (saveBeforeOpen)
             {
                 saveList();
             }
         }
-        System.out.print("Please enter filename to open and make sure to include .txt extension: ");
-        filename = scanner.nextLine();
+
+        filename = SafeInput.getRegExString(scanner, "Please enter filename to open and make sure to include .txt extension: ", ".+\\.txt");
         File file = new File(filename);
         if (file.exists())
         {
             try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
-                items.clear();
+                myArrList.clear();
                 String line;
                 while ((line = reader.readLine()) != null)
                 {
-                    items.add(line);
+                    myArrList.add(line);
                 }
                 needsToBeSaved = false;
+                System.out.println("List loaded from " + filename);
             } catch (IOException e)
             {
                 System.out.println("There was an error reading the file: " + e.getMessage());
@@ -165,57 +142,58 @@ public class fileListMaker
 
     private static void saveList()
     {
-        if (filename != null)
+        if (filename == null)
         {
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter(filename)))
-            {
-                for (String item : items)
-                {
-                    writer.write(item);
-                    writer.newLine();
-                }
-                needsToBeSaved = false;
-            }
-            catch (IOException e)
-            {
-                System.out.println("There was an error writing file: " + e.getMessage());
-            }
+            filename = SafeInput.getRegExString(scanner, "Please enter filename to save the list and make sure to include .txt extension: ", ".+\\.txt");
         }
-        else
+
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filename))) {
+            for (String item : myArrList)
+            {
+                writer.write(item);
+                writer.newLine();
+            }
+            needsToBeSaved = false;
+            System.out.println("List saved to " + filename);
+        }
+        catch (IOException e)
         {
-            System.out.println("There is no file to save to. Please use option O to open a file first.");
+            System.out.println("There was an error writing to the file: " + e.getMessage());
         }
     }
 
     private static void clearList()
     {
-        items.clear();
+        myArrList.clear();
         needsToBeSaved = true;
+        System.out.println("List has been cleared.");
     }
 
-    private static void viewList() {
-        System.out.println("\nCurrent List:");
-        for (int i = 0; i < items.size(); i++)
+    private static void viewList()
+    {
+        if (myArrList.isEmpty())
         {
-            System.out.println(i + ": " + items.get(i));
+            System.out.println("The list is currently empty.");
+        }
+        else
+        {
+            for (int i = 0; i < myArrList.size(); i++)
+            {
+                System.out.println((i + 1) + ": " + myArrList.get(i)); // Display list with one-based indexing
+            }
         }
     }
 
-    private static void quitProgram(Scanner scanner)
+    private static boolean quitProgram()
     {
         if (needsToBeSaved)
         {
-            System.out.print("You have unsaved changes. Would you like to save before quitting? (y/n): ");
-            String save = scanner.nextLine().trim().toLowerCase();
-            if (save.equals("y"))
+            boolean saveBeforeQuit = SafeInput.getYNConfirm(scanner, "You have unsaved changes. Would you like to save before quitting?");
+            if (saveBeforeQuit)
             {
-                if (filename == null)
-                {
-                    System.out.print("Please enter filename to save the list and make sure to include .txt extension: ");
-                    filename = scanner.nextLine();
-                }
                 saveList();
             }
         }
+        return !SafeInput.getYNConfirm(scanner, "Are you sure you would like to quit?");
     }
 }
